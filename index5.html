@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>財政部國稅局 發證作業臨櫃應備文件預檢系統</title>
+    <style>
+        :root { --primary-color: #0056b3; --accent-color: #28a745; --light-bg: #f8f9fa; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 20px; background-color: var(--light-bg); color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary-color); margin-bottom: 25px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; }
+        select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; }
+        .checkbox-group { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 12px 15px; border-radius: 4px; margin-top: 10px; }
+        .result-box { margin-top: 30px; border: 1px solid #c3e6cb; background-color: #d4edda; border-radius: 6px; padding: 20px; display: none; }
+        .doc-list { list-style-type: none; padding-left: 0; }
+        .doc-list li { position: relative; padding: 8px 0 8px 25px; border-bottom: 1px dashed #b1dfbb; line-height: 1.5; }
+        .doc-list li::before { content: "✔"; position: absolute; left: 0; color: var(--accent-color); font-weight: bold; }
+        .btn-copy { background-color: #6c757d; color: #fff; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; }
+        .global-notice { margin-top: 15px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; font-size: 0.9rem; white-space: pre-line; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>發證作業 臨櫃應備文件預檢系統</h1>
+    <div class="form-group">
+        <label for="itemSelect">1. 請選擇發證作業項目：</label>
+        <select id="itemSelect" onchange="updateSubOptions()">
+            <option value="">-- 請選擇 --</option>
+            <option value="item1">1. 各項稅款補發稅單 (跨區局)</option>
+            <option value="item2">2. 補發遺產稅不動產公同共有同意移轉證明書 (跨區局)</option>
+            <option value="item3">3. 儲蓄免扣稅納稅證明 (跨區局)</option>
+            <option value="item4">4. 中(英)文綜合所得稅納稅證明書 (跨區局)</option>
+            <option value="item5">5. 核發違章欠稅查復表 (跨區局)</option>
+            <option value="item6">6. 核發扣繳稅款繳納證明</option>
+            <option value="item7">7. 補發遺產稅證明書 (跨區局)</option>
+            <option value="item8">8. 補發贈與稅證明書 (跨區局)</option>
+            <option value="item9">9. 核發繳稅證明 (跨區局)</option>
+            <option value="item10">10. 核發中、英個人房屋土地交易所得稅納稅繳稅證明 (跨區局)</option>
+        </select>
+    </div>
+
+    <div class="form-group" id="subGroup" style="display: none;">
+        <label for="identitySelect">2. 請選擇申請人身分／案件類別：</label>
+        <select id="identitySelect" onchange="renderChecklist()"></select>
+    </div>
+
+    <div class="checkbox-group" id="agentGroup" style="display: none;">
+        <label><input type="checkbox" id="isAgent" onchange="renderChecklist()"> 委託他人代理辦理（委任辦理請勾選）</label>
+    </div>
+
+    <div class="result-box" id="resultBox">
+        <h2>📋 臨櫃洽辦應檢核／攜帶書表清單：</h2>
+        <ul class="doc-list" id="docList"></ul>
+        <div id="feeHint" style="display:none; color:#721c24; margin:10px 0; white-space: pre-line;"></div>
+        <button class="btn-copy" onclick="copyChecklist()">📋 複製清單內容</button>
+        <div class="global-notice" id="globalNotice">💡 注意事項：納稅義務人為營利事業或機關團體，應檢附公司登記證明文件或商業登記證明文件或法人登記證影本(90年11月12日公司法修正後，得以(1)中央或地方政府核發之核准函及公司申請設立或變更之登記表，或(2)公司法第392條規定之登記事項證明書(代替)，並應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。外國法人在臺未辦登記者，應檢附經我國當地駐外機構簽證之授權書及該法人組織於當地國核准設立之證明文件。若當地國核准設立之證明文件無法確認授權者之授權行為是否合法適格，應另檢附公司章程或其他證明文件以表彰其為該法人執行業務範圍之負責人、經理人身分。如文件為外文者，並應檢附駐外機構驗證或國內公證人認證之中譯本。</div>
+    </div>
+</div>
+
+<script>
+    const common = {
+        corp: ["主管機關核准設立文件影本並加蓋營利事業或機關團體及負責人印章", "如負責人親自申辦，應另檢附身分證正本"],
+        heirProof: (type) => [
+            "被繼承人死亡除戶資料(如死亡診斷證明書或載有死亡日期之戶口名簿影本等)1份",
+            "申請人與被繼承人關係證明文件，例如：<br>(1)戶口名簿<br>(2)國民身分證正本<br>(3)大陸地區公證處出具之親屬關係證明文件，及財團法人海峽交流基金會驗證之證明，並向被繼承人住所地法院表示繼承經准予備查之文件<br>(4)國外出具之經我國當地駐外機構簽證證明文件等",
+            "死亡人為非中華民國國民或經常居住中華民國境外之中華民國國民，檢附國外出具之相關證明文件，應經我國當地駐外機構簽證",
+            "繳納應繼分之繳款書收據影本",
+            type
+        ]
+    };
+
+    const systemData = {
+        item1: { title: "各項稅款補發稅單 (跨區局)", hint: "※ 提供納稅義務人申請補發稅單繳清稅款之用。\n※ 補發時均不得展延限繳日期。", options: [
+            { id: "local_citizen", name: "納稅義務人(個人)-本國國民", docs: ["國民身分證正本"] },
+            { id: "foreign_citizen", name: "納稅義務人(個人)-外籍人士", docs: ["護照或居留證正本"] },
+            { id: "mainland_citizen", name: "納稅義務人(個人)-大陸人士", docs: ["經內政部入出國及移民署核發之臺灣地區入出境許可證或居留證正本"] },
+            { id: "corp", name: "營利事業或機關團體", docs: common.corp }
+        ]},
+        item2: { title: "補發遺產稅不動產公同共有同意移轉證明書 (跨區局)", options: [
+            { id: "local_citizen", name: "繼承人-本國國民", docs: common.heirProof("國民身分證正本") },
+            { id: "foreign_citizen", name: "繼承人-外籍人士", docs: common.heirProof("護照或內政部入出國及移民署核發之居留證正本") },
+            { id: "mainland_citizen", name: "繼承人-大陸人士", docs: common.heirProof("經內政部移民署核發之臺灣地區入出境許可證或居留證正本") }
+        ]},
+        item3: { title: "儲蓄免扣稅納稅證明 (跨區局)", options: [
+            { id: "local_citizen", name: "納稅義務人(個人)-本國國民", docs: ["國民身分證或戶口名簿正本"] },
+            { id: "foreign_citizen", name: "納稅義務人(個人)-外籍人士", docs: ["護照或居留證正本"] },
+            { id: "mainland_citizen", name: "納稅義務人(個人)-大陸人士", docs: ["經內政部移民署核發之臺灣地區入出境許可證或居留證正本"] }
+        ]},
+        item4: { title: "中(英)文綜合所得稅納稅證明書 (跨區局)", options: [
+            { id: "local_citizen", name: "納稅義務人", docs: ["國民身分證正本 (※申請英文納稅證明請另檢附護照或居留證)"] }
+        ]},
+        item5: { title: "核發違章欠稅查復表 (跨區局)", options: [
+            { id: "local_citizen", name: "納稅義務人(個人)-本國國民", docs: ["國民身分證正本"] },
+            { id: "foreign_citizen", name: "納稅義務人(個人)-外籍人士", docs: ["護照或居留證正本"] },
+            { id: "mainland_citizen", name: "納稅義務人(個人)-大陸人士", docs: ["經內政部入出國及移民署核發之臺灣地區入出境許可證或居留證正本"] },
+            { id: "corp", name: "營利事業或機關團體", docs: common.corp }
+        ]},
+        item6: { title: "核發扣繳稅款繳納證明", options: [
+            { id: "default", name: "預設", docs: [...common.corp, "由房東申請租賃所得報繳資料時，應檢具房東身分證正本、房屋稅單或租賃契約影本"] }
+        ]},
+        item7: { title: "補發遺產稅證明書 (跨區局)", options: [
+            { id: "local_citizen", name: "繼承人-本國國民", docs: common.heirProof("國民身分證正本") },
+            { id: "foreign_citizen", name: "繼承人-外籍人士", docs: common.heirProof("護照或內政部入出國及移民署核發之居留證正本") },
+            { id: "mainland_citizen", name: "繼承人-大陸人士", docs: common.heirProof("經內政部移民署核發之臺灣地區入出境許可證或居留證正本") }
+        ]},
+        item8: { title: "補發贈與稅證明書 (跨區局)", options: [
+            { id: "local_citizen", name: "本國國民", docs: ["國民身分證正本"] },
+            { id: "foreign_citizen", name: "外籍人士", docs: ["護照或經內政部移民署核發之居留證正本"] },
+            { id: "mainland_citizen", name: "大陸人士", docs: ["經內政部移民署核發之臺灣地區入出境許可證或居留證正本"] },
+            { id: "heir_gift", name: "贈與人已死亡，由繼承人提出申請查詢者", docs: ["需附被繼承人死亡除戶資料(如死亡診斷證明書或載有死亡日期之戶口名簿影本等)，如非配偶或民法第1138條第一順位繼承人，應另檢附加蓋申請人印章之繼承系統表", "納稅義務人(繼承人)身分證正本"] }
+        ]},
+        item9: { title: "核發繳稅證明 (跨區局)", options: [
+            { id: "individual", name: "個人", docs: ["納稅義務人身分證正本"] },
+            { id: "corp", name: "營利事業或機關團體", docs: common.corp }
+        ]},
+        item10: { title: "核發中、英個人房屋土地交易所得稅納稅繳稅證明 (跨區局)", options: [
+            { id: "taxpayer", name: "納稅義務人", docs: ["身分證或居留證正本"] },
+            { id: "foreign_no_permit", name: "無居留證之外僑", docs: ["護照正本"] },
+            { id: "minor", name: "申請人如屬未成年者", docs: ["應檢附法定代理人(或監護人)國民身分證及印章外，並加附戶口名簿"] }
+        ]}
+    };
+
+    function updateSubOptions() {
+        const itemVal = document.getElementById("itemSelect").value;
+        const subGroup = document.getElementById("subGroup");
+        const identitySelect = document.getElementById("identitySelect");
+        identitySelect.innerHTML = "";
+        
+        if (!itemVal || !systemData[itemVal]) {
+            subGroup.style.display = "none";
+            document.getElementById("agentGroup").style.display = "none";
+            document.getElementById("resultBox").style.display = "none";
+            return;
+        }
+
+        const options = systemData[itemVal].options;
+
+        // 如果是第 6 項，隱藏第 2 欄位，但保留代理人選項與自動載入應備文件
+        if (itemVal === "item6") {
+            subGroup.style.display = "none";
+            options.forEach(opt => {
+                const el = document.createElement("option");
+                el.value = opt.id; el.textContent = opt.name;
+                identitySelect.appendChild(el);
+            });
+            identitySelect.value = options[0].id; // 預設選中第一個隱藏選項以觸發內容
+            document.getElementById("agentGroup").style.display = "block";
+            renderChecklist();
+            return;
+        }
+
+        options.forEach(opt => {
+            const el = document.createElement("option");
+            el.value = opt.id; el.textContent = opt.name;
+            identitySelect.appendChild(el);
+        });
+        subGroup.style.display = "block";
+        document.getElementById("agentGroup").style.display = "block";
+        renderChecklist();
+    }
+
+    function renderChecklist() {
+        const itemVal = document.getElementById("itemSelect").value;
+        const identityVal = document.getElementById("identitySelect").value;
+        const isAgent = document.getElementById("isAgent").checked;
+        const docList = document.getElementById("docList");
+        const feeHint = document.getElementById("feeHint");
+        
+        const opt = systemData[itemVal].options.find(o => o.id === identityVal);
+        let docs = [...opt.docs];
+
+        if (isAgent) {
+            docs.push('委任書或授權書正本。<br>- 如係在中華民國境外委託時，應經我國當地駐外機構簽證。<br>- 如係在大陸地區委託時，應檢附大陸地區公證處出具之證明文件(需取得財團法人海峽交流基金會驗證之證明)。',
+                      "代理人國民身分證正本。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+        }
+        
+        docList.innerHTML = docs.map(d => `<li>${d}</li>`).join("");
+        
+        if (systemData[itemVal].hint) {
+            feeHint.textContent = systemData[itemVal].hint;
+            feeHint.style.display = "block";
+        } else {
+            feeHint.style.display = "none";
+        }
+        document.getElementById("resultBox").style.display = "block";
+    }
+
+    function copyChecklist() {
+        const docText = Array.from(document.querySelectorAll("#docList li")).map(li => `✔ ${li.innerText}`).join("\n");
+        const fullText = `📋 臨櫃洽辦應檢核／攜帶書表清單：\n${docText}`;
+        navigator.clipboard.writeText(fullText).then(() => alert("已複製清單內容！"));
+    }
+</script>
+</body>
+</html>
