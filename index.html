@@ -19,6 +19,36 @@
         .doc-list li::before { content: "✔"; position: absolute; left: 0; color: var(--accent-color); font-weight: bold; }
         .btn-copy { background-color: #6c757d; color: #fff; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; }
         .global-notice { margin-top: 15px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; font-size: 0.9rem; white-space: pre-line; }
+
+.global-notice {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #856404;
+}
+
+/* 強制讓注意事項的清單顯示預設圓點 */
+.global-notice ul {
+    list-style-type: disc !important;
+    padding-left: 1.25rem !important; /* 確保有足夠的縮排空間放圓點 */
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.global-notice li {
+    display: list-item !important; /* 強制以清單項目模式顯示 */
+    list-style-type: disc !important;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+
+.global-notice li:last-child {
+    margin-bottom: 0;
+}
+
     </style>
 </head>
 <body>
@@ -56,10 +86,12 @@
         <ul class="doc-list" id="docList"></ul>
         <div id="feeHint" style="display:none; color:#721c24; margin:10px 0; white-space: pre-line;"></div>
         <button class="btn-copy" onclick="copyChecklist()">📋 複製清單內容</button>
-        <div class="global-notice" id="globalNotice">💡 注意事項：<br>
-            納稅義務人為營利事業或機關團體，應檢附公司登記證明文件或商業登記證明文件或法人登記證影本（90年11月12日公司法修正後），得以 (1)中央或地方政府核發之核准函及公司申請設立或變更之登記表，或(2)公司法第392條規定之登記事項證明書(代替)，並應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。
-            <br>外國法人在臺未辦登記者，應檢附經我國當地駐外機構簽證之授權書及該法人組織於當地國核准設立之證明文件。若當地國核准設立之證明文件無法確認授權者之授權行為是否合法適格，應另檢附公司章程或其他證明文件以表彰其為該法人執行業務範圍之負責人、經理人身分。如文件為外文者，並應檢附駐外機構驗證或國內公證人認證之中譯本。</div>
-    </div>
+        <div class="global-notice" id="globalNotice">
+    <strong>💡 注意事項：</strong>
+    <ul>
+        <li>納稅義務人為營利事業或機關團體，應檢附公司登記證明文件或商業登記證明文件或法人登記證影本（90年11月12日公司法修正後），得以 (1)中央或地方政府核發之核准函及公司申請設立或變更之登記表，或(2)公司法第392條規定之登記事項證明書(代替)，並應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。</li>
+        <li>外國法人在臺未辦登記者，應檢附經我國當地駐外機構簽證之授權書及該法人組織於當地國核准設立之證明文件。若當地國核准設立之證明文件無法確認授權者之授權行為是否合法適格，應另檢附公司章程或其他證明文件以表彰其為該法人執行業務範圍之負責人、經理人身分。如文件為外文者，並應檢附駐外機構驗證或國內公證人認證之中譯本。</li>
+    </ul>
 </div>
 
 <script>
@@ -175,8 +207,25 @@
         let docs = [...opt.docs];
 
         if (isAgent) {
-            docs.push('委任書或授權書正本。<br>- 如係在中華民國境外委託時，應經我國當地駐外機構簽證。<br>- 如係在大陸地區委託時，應檢附大陸地區公證處出具之證明文件(需取得財團法人海峽交流基金會驗證之證明)。',
-                      "代理人國民身分證正本。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+            // 判斷是否為外籍人士或大陸人士
+            const isForeignOrMainland = identityVal === "foreign_citizen" || identityVal === "mainland_citizen";
+
+            if (isForeignOrMainland) {
+                // 外籍人士、大陸人士：維持現狀
+                docs.push('委任書或授權書正本。<br>- 如係在中華民國境外委託時，應經我國當地駐外機構簽證。<br>- 如係在大陸地區委託時，應檢附大陸地區公證處出具之證明文件(需取得財團法人海峽交流基金會驗證之證明)。');
+            } else {
+                // 其餘身分：刪除境外與大陸地區委託相關說明
+                docs.push('委任書或授權書正本。');
+            }
+
+            // 判斷是否為營利事業或機關團體
+            const isCorp = identityVal === "corp" || identityVal === "default"; // item6 的 default 為營利事業/機關團體相關
+
+            if (isCorp) {
+                docs.push("代理人國民身分證正本、營利事業 / 機關團體章及負責人印章。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+            } else {
+                docs.push("代理人國民身分證正本。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+            }
         }
         
         docList.innerHTML = docs.map(d => `<li>${d}</li>`).join("");
@@ -187,14 +236,93 @@
         } else {
             feeHint.style.display = "none";
         }
+
+ // 控制注意事項欄位：僅營利事業或機關團體時顯示
+        const isCorpIdentity = identityVal === "corp" || identityVal === "default";
+        if (globalNotice) {
+            globalNotice.style.display = isCorpIdentity ? "block" : "none";
+        }
+
         document.getElementById("resultBox").style.display = "block";
     }
 
-    function copyChecklist() {
-        const docText = Array.from(document.querySelectorAll("#docList li")).map(li => `✔ ${li.innerText}`).join("\n");
-        const fullText = `📋 臨櫃洽辦應檢核／攜帶書表清單：\n${docText}`;
-        navigator.clipboard.writeText(fullText).then(() => alert("已複製清單內容！"));
+function generateFormattedText() {
+        const itemSelect = document.getElementById("itemSelect");
+        const identitySelect = document.getElementById("identitySelect");
+        const itemVal = itemSelect.value;
+        const itemData = systemData[itemVal];
+        const isAgent = document.getElementById("isAgent").checked;
+
+        let systemHeader = "【國稅發證作業系統】";
+
+        let text = `${systemHeader}\n\n`;
+        text += "📌 【申請項目與條件】\n";
+
+        if (itemData) {
+            text += "• 申辦項目：" + itemData.title + "\n";
+        }
+
+        // 如果是第 6 項，項目預設名稱非選擇性身分，避免輸出無意義的身分名稱
+        let selectedOptionText = (identitySelect.selectedIndex >= 0 && identitySelect.options[identitySelect.selectedIndex]) 
+            ? identitySelect.options[identitySelect.selectedIndex].text 
+            : "";
+
+        if (itemVal !== "item6" && selectedOptionText) {
+            text += "• 申請人身分：" + selectedOptionText + "\n";
+        }
+
+        if (isAgent) {
+            text += "• 辦理方式：委託他人代理辦理\n";
+        }
+
+        text += "\n📋 【臨櫃洽辦應檢核／攜帶書表清單】\n";
+
+        const docListItems = document.querySelectorAll("#docList li");
+        docListItems.forEach((li) => {
+            let textContent = li.innerText.trim();
+            let cleanText = textContent.replace(/^[✔☑-]\s*/, '');
+            let lines = cleanText.split('\n').map(l => l.trim()).filter(l => l);
+
+            if (lines.length > 0) {
+                text += "✔ " + lines[0] + "\n";
+                for (let i = 1; i < lines.length; i++) {
+                    text += "  " + lines[i] + "\n";
+                }
+            }
+        });
+
+        // 包含費用/注意事項提示 (feeHint)
+        const feeHint = document.getElementById("feeHint");
+        if (feeHint && feeHint.style.display !== "none" && feeHint.textContent.trim() !== "") {
+            text += "\n" + feeHint.textContent.trim() + "\n";
+        }
+
+        // 包含全域注意事項 (globalNotice)，僅在有顯示時複製
+        const globalNotice = document.getElementById("globalNotice");
+        if (globalNotice && globalNotice.style.display !== "none") {
+            const noticeTitle = globalNotice.querySelector("strong") ? globalNotice.querySelector("strong").innerText : "💡 注意事項：";
+            const noticeItems = globalNotice.querySelectorAll("ul li");
+            
+            if (noticeItems.length > 0) {
+                text += "\n" + noticeTitle + "\n";
+                noticeItems.forEach(li => {
+                    text += "• " + li.innerText.trim() + "\n";
+                });
+            }
+        }
+
+        return text;
     }
+
+    function copyChecklist() {
+        const text = generateFormattedText();
+        navigator.clipboard.writeText(text).then(() => {
+            alert("已成功複製清單與選項內容！");
+        }).catch(() => {
+            alert("複製失敗，請手動複製。");
+        });
+    }
+
 </script>
 </body>
 </html>
