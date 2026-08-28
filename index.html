@@ -123,7 +123,7 @@
             { id: "foreign_citizen", name: "納稅義務人(個人)-外籍人士", docs: ["護照或居留證正本"] },
             { id: "mainland_citizen", name: "納稅義務人(個人)-大陸人士", docs: ["經內政部移民署核發之臺灣地區入出境許可證或居留證正本"] }
         ]},
-        item4: { title: "中(英)文綜合所得稅納稅證明書 (跨區局)", options: [
+        item4: { title: "中(英)文綜合所得稅納稅證明書 (跨區局)",hint:"(一)申請核發中、英文綜合所得稅納稅證明書，申請人需為納稅義務人本人，若為配偶或受扶養親屬申請時，仍應檢附委任書或授權書。\n(二) 英文綜合所得稅納稅證明如須記載納稅義務人本人及配偶英文姓名，應請申請人提供相關資料(如護照或居留證)，俾利作業。\n(三) 納稅義務人為申請喪失國籍所需之綜合所得稅納稅證明案件，應依內政部要求之格式處理，本項作業不提供是項服務，應輔導申請人向其最後設籍之國稅局另案申請。", options: [
             { id: "local_citizen", name: "納稅義務人", docs: ["國民身分證正本 (※申請英文納稅證明請另檢附護照或居留證)"] }
         ]},
         item5: { title: "核發違章欠稅查復表 (跨區局)", options: [
@@ -133,7 +133,7 @@
             { id: "corp", name: "營利事業或機關團體", docs: common.corp }
         ]},
         item6: { title: "核發扣繳稅款繳納證明", options: [
-            { id: "default", name: "預設", docs: [...common.corp, "由房東申請租賃所得報繳資料時，應檢具房東身分證正本、房屋稅單或租賃契約影本"] }
+            { id: "default", name: "預設", docs: [common.corp[0], "如負責人親自申辦，應另檢附身分證正本、營利事業/機關團體章及負責人印章", "由房東申請租賃所得報繳資料時，應檢具房東身分證正本、房屋稅單或租賃契約影本"] }
         ]},
         item7: { title: "補發遺產稅證明書 (跨區局)", options: [
             { id: "local_citizen", name: "繼承人-本國國民", docs: common.heirProof("國民身分證正本") },
@@ -153,7 +153,7 @@
         item10: { title: "核發中、英個人房屋土地交易所得稅納稅繳稅證明 (跨區局)", options: [
             { id: "taxpayer", name: "納稅義務人", docs: ["身分證或居留證正本"] },
             { id: "foreign_no_permit", name: "無居留證之外僑", docs: ["護照正本"] },
-            { id: "minor", name: "申請人如屬未成年者", docs: ["應檢附法定代理人(或監護人)國民身分證及印章外，並加附戶口名簿"] }
+            { id: "minor", name: "申請人如屬未成年者", docs: ["申請人之（法定代理人或監護人）父母雙方國民身分證正本 ( 未到場者可附身分證正反面影本 ) 及印章", "附有詳細記事戶口名簿或詳細記事戶籍謄本<br>① 倘父母離婚者，由擔任親權行使之父或母之一方代為申請時，應出具相關證明文件 ( 如父母雙方之協議書或法院判決書或戶口名簿等 ) 免附他方之授權書或委任書或同意書，惟經協議，由雙方共同行使或負擔時，仍應由為法定代理人之父母二人共同簽章代為申請。<br>② 因離婚而約定子女由一方監護，倘任監護之一方死亡者，由他方代為申請時，應出具相關證明文件，如父母雙方之協議書或法院判決書或戶口名簿等及任監護之一方之死亡診斷證明書或載有死亡日期之戶口名簿影本等，簽章代為申請，免附授權書。"] }
         ]}
     };
 
@@ -207,6 +207,9 @@
         let docs = [...opt.docs];
 
         if (isAgent) {
+            // 委託辦理時，選項原有文件中的「身分證正本」可改附正反面影本
+            docs = docs.map(doc => doc.replaceAll("身分證正本", "身分證正本或正反面影本"));
+
             // 判斷是否為外籍人士或大陸人士
             const isForeignOrMainland = identityVal === "foreign_citizen" || identityVal === "mainland_citizen";
 
@@ -222,18 +225,27 @@
             const isCorp = identityVal === "corp" || identityVal === "default"; // item6 的 default 為營利事業/機關團體相關
 
             if (isCorp) {
-                docs.push("代理人國民身分證正本、營利事業 / 機關團體章及負責人印章。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+                docs.push("代理人國民身分證正本、營利事業 / 機關團體章及負責人印章。");
             } else {
-                docs.push("代理人國民身分證正本。<br>（如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。）");
+                docs.push("代理人國民身分證正本。");
             }
         }
         
         docList.innerHTML = docs.map(d => `<li>${d}</li>`).join("");
         
+        const hints = [];
         if (systemData[itemVal].hint) {
-            feeHint.textContent = systemData[itemVal].hint;
+            hints.push(systemData[itemVal].hint);
+        }
+        if (isAgent) {
+            hints.push("※ 如代理人所提示之申請人身分證明文件為影本，應由申請人或代理人具結「與正本相符，如有不符願負法律責任」。");
+        }
+
+        if (hints.length > 0) {
+            feeHint.textContent = hints.join("\n");
             feeHint.style.display = "block";
         } else {
+            feeHint.textContent = "";
             feeHint.style.display = "none";
         }
 
